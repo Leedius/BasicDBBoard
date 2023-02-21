@@ -40,7 +40,7 @@ public class BoardDAO {
 				+ "BOARD_NUM"
 				+ ", TITLE"
 				+ ", WRITER"
-				+ ", CREATE_DATE "
+				+ ", TO_CHAR(CREATE_DATE, 'YYYY-MM-DD') AS CREATE_DATE "
 			+ "FROM "
 				+ "BASIC_BOARD";
 				
@@ -80,7 +80,6 @@ public class BoardDAO {
 	
 	//게시글 등록(몇개가 들어갔는지 확인하기 위해서 리턴타입인 int)
 	public int insertBoard(int boardNum, String title, String writer, String content) {
-		//게시글 목록을 저장할 리스트 객체
 		int result = 0;
 		
 		//실행할 쿼리
@@ -91,7 +90,7 @@ public class BoardDAO {
 				+ ", CONTENT"
 				+ ") "
 				+ "VALUES ("
-				+ "(SELECT MAX(BOARD_NUM) + 1 FROM BASIC_BOARD)"
+				+ "(SELECT NVL(MAX(BOARD_NUM), 0) + 1 FROM BASIC_BOARD)"
 				+ ", ?"
 				+ ", ?"
 				+ ", ?"
@@ -124,16 +123,18 @@ public class BoardDAO {
 	//게시글 상세 조회
 	public BoardDTO selectBoard(int boardNum) {
 
-		
+		BoardDTO boardDetail = new BoardDTO();
 		// 실행할 쿼리
 		sql = "SELECT "
 				+ "BOARD_NUM"
 				+ ", TITLE"
 				+ ", WRITER"
 				+ ", CREATE_DATE"
-				+ ", CONTENT"
+				+ ", CONTENT "
 			+ "FROM "
-				+ "BASIC_BOARD == ?";
+				+ "BASIC_BOARD "
+				+ "WHERE "
+				+ "BOARD_NUM = ?";
 
 		try {
 			// 자바와 디비를 연결
@@ -148,15 +149,16 @@ public class BoardDAO {
 			// 쿼리 실행(조회이기때문에 execute뒤에 Query()를 씀.
 			rs = pstmt.executeQuery();
 
-//			while (rs.next()) {
+			while (rs.next()) {
+				int num = rs.getInt("BOARD_NUM");
 				String title = rs.getString("TITLE");
 				String writer = rs.getString("WRITER");
 				String createDate = rs.getString("CREATE_DATE");
 				String content = rs.getString("CONTENT");
 
 				// 조회된 데이터에는 content가 없어서 마지막 항목은 null로 넣는다
-				BoardDTO boardDetail = new BoardDTO(boardNum, title, writer, createDate, content);
-//			}
+				boardDetail = new BoardDTO(num, title, writer, createDate, content);
+			}
 
 		} catch (Exception e) {
 			System.out.println("게시글 목록 조회 오류");
@@ -165,16 +167,127 @@ public class BoardDAO {
 			DBUtil.close(rs, pstmt, conn);
 		}
 		// 조회된 모든 데이터를 지닌 boardList 객체 리턴
-		return 
+		return boardDetail;
 	}
 	
 	//게시글 삭제
-	public void deleteBoard() {
+	public void deleteBoard(int boardNum) {
 		
+		//실행할 쿼리
+		sql = "DELETE BASIC_BOARD "
+				+ "WHERE "
+				+ "BOARD_NUM = ?";
+			
+		try {
+			// 자바와 디비를 연결
+			conn = DBUtil.getConnection();
+
+			// 쿼리를 실행시킬 객체를 생성
+			pstmt = conn.prepareStatement(sql);
+			
+			// ?값을 채워줘야 함
+			pstmt.setInt(1, boardNum);
+			
+			// 쿼리 실행(몇 행이 삽입되었는지 result에 저장)
+			pstmt.executeUpdate();
+			
+		} catch (Exception e) {
+			System.out.println("게시글 목록 조회 오류");
+			e.printStackTrace();
+		} finally {
+			DBUtil.close(rs, pstmt, conn);
+		}
+	
+	}
+	
+	//게시글 상세페이지에서 데이터 받아서 수정페이지로 이동
+	public BoardDTO detailToUpdate(int boardNum) {
+		BoardDTO boardUpdate = new BoardDTO();
+		sql = "SELECT "
+				+ "BOARD_NUM"
+				+ ", TITLE"
+				+ ", WRITER"
+				+ ", CREATE_DATE"
+				+ ", CONTENT "
+			+ "FROM "
+				+ "BASIC_BOARD "
+				+ "WHERE "
+				+ "BOARD_NUM = ?";
+
+		try {
+			// 자바와 디비를 연결
+			conn = DBUtil.getConnection();
+
+			// 쿼리를 실행시킬 객체를 생성
+			pstmt = conn.prepareStatement(sql);
+
+			// ?값을 채워줘야 함
+			pstmt.setInt(1, boardNum);
+
+			// 쿼리 실행(조회이기때문에 execute뒤에 Query()를 씀.
+			rs = pstmt.executeQuery();
+
+			while (rs.next()) {
+				int num = rs.getInt("BOARD_NUM");
+				String title = rs.getString("TITLE");
+				String writer = rs.getString("WRITER");
+				String createDate = rs.getString("CREATE_DATE");
+				String content = rs.getString("CONTENT");
+
+				// 조회된 데이터에는 content가 없어서 마지막 항목은 null로 넣는다
+				boardUpdate = new BoardDTO(num, title, writer, createDate, content);
+			}
+
+		} catch (Exception e) {
+			System.out.println("게시글 목록 조회 오류");
+			e.printStackTrace();
+		} finally {
+			DBUtil.close(rs, pstmt, conn);
+		}
+		// 조회된 모든 데이터를 지닌 객체 리턴
+		return boardUpdate;
 	}
 	
 	//게시글 수정
-	public void updateBoard() {
-		
+	public BoardDTO updateBoard(int boardNum, String title, String writer, String createDate, String content) {
+		BoardDTO boardUpdate = new BoardDTO();
+		// 실행할 쿼리
+		sql = "UPDATE "
+				+ "BASIC_BOARD "
+				+ "SET " 
+				+ "TITLE = ?"
+				+ ", WRITER = ?"
+				+ ", CONTENT = ? "
+			+ "WHERE "
+				+ "BOARD_NUM = ?";
+
+		try {
+			// 자바와 디비를 연결
+			conn = DBUtil.getConnection();
+
+			// 쿼리를 실행시킬 객체를 생성
+			pstmt = conn.prepareStatement(sql);
+
+			// ?값을 채워줘야 함
+			pstmt.setString(1, title);
+			pstmt.setString(2, writer);
+			pstmt.setString(3, content);
+			pstmt.setInt(4, boardNum);
+
+			// 쿼리 실행
+			pstmt.executeUpdate();
+			
+			boardUpdate = new BoardDTO(boardNum, title, writer, createDate, content);
+
+
+		} catch (Exception e) {
+			System.out.println("게시글 목록 조회 오류");
+			e.printStackTrace();
+		} finally {
+			DBUtil.close(rs, pstmt, conn);
+		}
+		// 조회된 모든 데이터를 지닌 boardList 객체 리턴
+		return boardUpdate;
 	}
+	
 }

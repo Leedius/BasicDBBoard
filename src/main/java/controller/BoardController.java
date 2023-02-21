@@ -72,17 +72,61 @@ public class BoardController extends HttpServlet {
 			String content = request.getParameter("content");
 			
 			//boardDAO의 객체에서 만든 insertBoard실행하겠다.
-			boardDAO.insertBoard(num, title, writer, content);
-			num++;
+			boardDAO.insertBoard(++num, title, writer, content);
 			
 			page = "boardList.do";
 			isRedirect = true;
 		}
 		
 		//상세 페이지로 이동
-		if(command.equals("/boardToDetail")) {
-			boardDAO.selectBoard(Integer.parseInt(request.getParameter("boardNum")));
+		if(command.equals("/boardDetail.do")) {
+			//넘어오는 글번호 데이터 받기
+			int boardNum = Integer.parseInt(request.getParameter("boardNum"));
+			
+			//상세조회 쿼리 실행
+			BoardDTO boardDetail = boardDAO.selectBoard(boardNum);
+			
+			request.setAttribute("boardDetail", boardDetail);
+			page = "board_detail.jsp";
 		}
+		
+		//게시글 삭제
+		if(command.equals("/boardDelete.do")) {
+			//넘어오는 글번호 데이터 받기
+			int boardNum = Integer.parseInt(request.getParameter("boardNum"));
+		
+		//상세조회 쿼리 실행
+			boardDAO.deleteBoard(boardNum);
+			
+		//게시판 목록으로 페이지 이동
+			page = "boardList.do";
+			isRedirect = true;
+		}
+		
+		
+		//게시글 수정 데이터 받아서 글수정 페이지로 이동
+		if(command.equals("/detailToUpdate.do")) {
+			int num = Integer.parseInt(request.getParameter("boardNum"));
+			BoardDTO boardUpdate = boardDAO.detailToUpdate(num);
+			request.setAttribute("boardUpdate", boardUpdate); 
+			page = "board_update_form.jsp";
+		}
+		
+		
+		//게시글 수정
+		if(command.equals("/updateBoardDetail.do")){
+			int num = Integer.parseInt(request.getParameter("boardNum"));
+			String title = request.getParameter("title");
+			String writer = request.getParameter("writer");
+			String createDate = request.getParameter("createDate");
+			String content = request.getParameter("content");
+			
+			boardDAO.updateBoard(num, title, writer, createDate, content);
+			request.setAttribute("boardNum", num);
+			
+			page = "boardDetail.do";
+		}
+		
 		
 		//페이지 이동
 		if(isRedirect) {
